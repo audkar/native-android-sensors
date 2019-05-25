@@ -14,4 +14,5 @@ Foreground service is used to ensure background work is not interrupted by syste
  - Turn-on `Do not keep activities` in Dev settings.
  - Running on low resources device for longer period of time / filling memory from other apps.
 
-
+#### Recorded video & expected result:
+<img src="https://github.com/audkar/native_android_sensors/raw/master/app_record.gif" width="200" />
