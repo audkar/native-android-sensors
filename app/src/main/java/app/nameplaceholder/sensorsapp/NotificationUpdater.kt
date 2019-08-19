@@ -11,8 +11,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.switchMap
 import kotlinx.coroutines.launch
 
@@ -23,17 +24,33 @@ fun bindNotificationState(context: Context) {
     GlobalScope.launch {
         ForegroundService.isActive.switchMap { isActive ->
             if (isActive) {
-                App.instance.repository.track()
+                App.instance.repository.track().map { Result.ActiveServiceResult(it) }
             } else {
-                emptyFlow()
+                listOf(Result.InActiveServiceResult).asFlow()
             }
         }.collect {
-            context.getSystemService<NotificationManager>()!!.notify(
-                NOTIFICATION_ID,
-                buildNotification(context, it)
-            )
+            when (it) {
+                is Result.ActiveServiceResult -> showNotification(context, it)
+                is Result.InActiveServiceResult -> hideNotification(context)
+            }
         }
     }
+}
+
+private fun showNotification(
+    context: Context,
+    result: Result.ActiveServiceResult
+) {
+    context.getSystemService<NotificationManager>()!!.notify(
+        NOTIFICATION_ID,
+        buildNotification(context, result.data)
+    )
+}
+
+private fun hideNotification(context: Context) {
+    context.getSystemService<NotificationManager>()!!.cancel(
+        NOTIFICATION_ID
+    )
 }
 
 fun buildNotification(context: Context, sensorData: List<SensorData>? = null): Notification {
@@ -50,7 +67,11 @@ fun buildNotification(context: Context, sensorData: List<SensorData>? = null): N
     return NotificationCompat.Builder(context, "foreground")
         .setContentTitle("Tracking active...")
         .setSmallIcon(R.drawable.ic_android_black_24dp)
-        .setStyle(NotificationCompat.BigTextStyle().bigText(sensorData?.formatNotificationContent() ?: ""))
+        .setStyle(
+            NotificationCompat.BigTextStyle().bigText(
+                sensorData?.formatNotificationContent() ?: ""
+            )
+        )
         .setContentIntent(
             PendingIntent.getActivity(
                 context,
@@ -68,4 +89,9 @@ private fun List<SensorData>.formatNotificationContent(): String {
         findLast { it is LightData }?.run { builder.appendln(this.getPrintable()) }
         findLast { it is BluetoothData }?.run { builder.appendln(this.getPrintable()) }
     }.toString()
+}
+
+private sealed class Result {
+    data class ActiveServiceResult(val data: List<SensorData>) : Result()
+    object InActiveServiceResult : Result()
 }
