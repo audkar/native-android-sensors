@@ -21,6 +21,7 @@ class ForegroundService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         isActiveChannel.offer(false)
+        stopForeground(true)
     }
 
     override fun onBind(intent: Intent?): IBinder? {

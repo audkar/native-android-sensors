@@ -25,6 +25,7 @@ fun bindNotificationState(context: Context) {
             if (isActive) {
                 App.instance.repository.track()
             } else {
+                App.instance.repository.stop()
                 emptyFlow()
             }
         }.collect {

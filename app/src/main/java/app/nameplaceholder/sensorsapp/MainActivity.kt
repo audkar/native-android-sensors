@@ -32,8 +32,6 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                                 .joinToString(separator = "\n") { sensorData -> sensorData.getPrintable() }
                         }
                     }
-                } else {
-                    App.instance.repository.stop()
                 }
             }
         }

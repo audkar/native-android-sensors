@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.*
 class DataRepository constructor(
     private val context: Context
 ) {
+    private val valuesInMemoryCache = mutableListOf<SensorData>()
 
     private var trackingChannel: BroadcastChannel<List<SensorData>>? = null
         get() {
@@ -37,7 +38,6 @@ class DataRepository constructor(
         }
 
     private fun createTrackingChannel(): BroadcastChannel<List<SensorData>> {
-        val valuesInMemoryCache = mutableListOf<SensorData>()
 
         return flow {
             emit(provideBluetoothData().sample(1000))
@@ -45,7 +45,8 @@ class DataRepository constructor(
             emit(provideLocation())
         }
             .flattenMerge()
-            .map { valuesInMemoryCache.add(it); valuesInMemoryCache.toList() }
+            .onEach { valuesInMemoryCache.add(it) }
+            .map { valuesInMemoryCache.toList() }
             .broadcastIn(scope = GlobalScope)
     }
 
