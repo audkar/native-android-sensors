@@ -9,20 +9,20 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.switchMap
 import kotlinx.coroutines.launch
 
 const val NOTIFICATION_ID = 1
 
-@UseExperimental(FlowPreview::class)
+@UseExperimental(ExperimentalCoroutinesApi::class)
 fun bindNotificationState(context: Context) {
     GlobalScope.launch {
-        ForegroundService.isActive.switchMap { isActive ->
+        ForegroundService.isActive.flatMapLatest{ isActive ->
             if (isActive) {
                 App.instance.repository.track().map { Result.ActiveServiceResult(it) }
             } else {

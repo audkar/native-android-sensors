@@ -20,8 +20,16 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.BroadcastChannel
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.broadcastIn
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flattenMerge
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.sample
 
 @UseExperimental(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class DataRepository constructor(
@@ -64,15 +72,15 @@ class DataRepository constructor(
             provideBluetoothRealData()
         }
 
-    private fun provideBluetoothRealData(): Flow<BluetoothData> = flowViaChannel { channel ->
+    private fun provideBluetoothRealData(): Flow<BluetoothData> = channelFlow {
         val scanner = context.getSystemService<BluetoothManager>()!!.adapter.bluetoothLeScanner
         val callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                channel.offer(BluetoothData(result.device.name ?: result.device.address))
+                offer(BluetoothData(result.device.name ?: result.device.address))
             }
         }
         scanner.startScan(callback)
-        channel.invokeOnClose {
+        awaitClose {
             scanner.stopScan(callback)
         }
     }
@@ -85,7 +93,7 @@ class DataRepository constructor(
         }
     }
 
-    private fun provideLightSensor() = flowViaChannel<LightData> { channel ->
+    private fun provideLightSensor() = channelFlow {
         val sensorManager = context.getSystemService<SensorManager>()!!
         val lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
         val listener = object : SensorEventListener {
@@ -93,8 +101,8 @@ class DataRepository constructor(
             }
 
             override fun onSensorChanged(event: SensorEvent) {
-                if (!channel.isClosedForSend) {
-                    channel.offer(LightData(event.values.first()))
+                if (!isClosedForSend) {
+                    offer(LightData(event.values.first()))
                 }
             }
         }
@@ -104,17 +112,17 @@ class DataRepository constructor(
             SensorManager.SENSOR_DELAY_NORMAL
         )
         Log.i(TAG, "Light sensor register success: $registerResult")
-        channel.invokeOnClose {
+        awaitClose {
             sensorManager.unregisterListener(listener)
         }
     }
 
     @SuppressLint("MissingPermission")
-    private fun provideLocation() = flowViaChannel<LocationData> { channel ->
+    private fun provideLocation() = channelFlow {
         val locationManager = context.getSystemService<LocationManager>()!!
         val listener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
-                channel.offer(LocationData(location.latitude))
+                offer(LocationData(location.latitude))
             }
 
             override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
@@ -133,7 +141,7 @@ class DataRepository constructor(
             listener,
             Looper.getMainLooper()
         )
-        channel.invokeOnClose {
+        awaitClose {
             locationManager.removeUpdates(listener)
         }
     }

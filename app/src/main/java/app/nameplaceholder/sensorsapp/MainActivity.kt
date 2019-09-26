@@ -8,10 +8,15 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.content.PermissionChecker
+import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
+import androidx.core.content.PermissionChecker.checkSelfPermission
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 @UseExperimental(FlowPreview::class)
@@ -50,7 +55,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
             if (isActive) {
                 stopService(Intent(this@MainActivity, ForegroundService::class.java))
             } else {
-                if (checkSelfPermission(ACCESS_FINE_LOCATION) == PermissionChecker.PERMISSION_GRANTED) {
+                if (checkSelfPermission(this, ACCESS_FINE_LOCATION) == PERMISSION_GRANTED) {
                     startTracking()
                 } else {
                     requestPermissions(arrayOf(ACCESS_FINE_LOCATION), 1)
@@ -72,7 +77,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
     }
 
     private fun startTracking() {
-        if (checkSelfPermission(ACCESS_FINE_LOCATION) == PermissionChecker.PERMISSION_GRANTED) {
+        if (checkSelfPermission(this, ACCESS_FINE_LOCATION) == PERMISSION_GRANTED) {
             ContextCompat.startForegroundService(this, Intent(this, ForegroundService::class.java))
         } else {
             Log.e(TAG, "Missing permissions")
