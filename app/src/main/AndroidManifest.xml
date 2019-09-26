@@ -27,7 +27,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".ForegroundService" />
+        <service android:name=".ForegroundService"
+            android:foregroundServiceType="location"
+            tools:targetApi="q"
+            />
     </application>
 
 </manifest>
